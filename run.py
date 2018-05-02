@@ -52,7 +52,7 @@ HOST      = os.environ.get('MYSQL_HOST', 'localhost')
 PORT      = os.environ.get('MYSQL_PORT', '3306')
 USERNAME  = os.environ.get('MYSQL_USER')
 PASSWORD  = os.environ.get('MYSQL_PASSWORD')
-DB        = os.environ.get('MYSQL_DATABASE')
+DB        = "-A" if bool(os.environ.get('ALL_DATABASES', False)) else os.environ.get('MYSQL_DATABASE')
 
 cloud = GCS(BUCKET, KEEP)
 
@@ -66,13 +66,18 @@ def backup():
             "--port=%s" % PORT,
             "--user=%s" % USERNAME,
             "--password=%s" % PASSWORD,
+            "--single-transaction",
+            "--hex-blob",
             DB], stdout = f)
 
         cloud.upload(f, backup_name)
 
     cloud.cleanup(DB)
 
-schedule.every(EVERY_N_DAYS).days.at(AT_TIME).do(backup)
-while True:
-    schedule.run_pending()
-    time.sleep(30)
+if EVERY_N_DAYS > 0:
+    schedule.every(EVERY_N_DAYS).days.at(AT_TIME).do(backup)
+    while True:
+        schedule.run_pending()
+        time.sleep(30)
+else:
+    backup()
