@@ -52,7 +52,8 @@ HOST      = os.environ.get('MYSQL_HOST', 'localhost')
 PORT      = int(os.environ.get('MYSQL_PORT', 3306))
 USERNAME  = os.environ.get('MYSQL_USER')
 PASSWORD  = os.environ.get('MYSQL_PASSWORD')
-DB        = "" if bool(os.environ.get('ALL_DATABASES', False)) else os.environ.get('MYSQL_DATABASE')
+ALL_DBS   = bool(os.environ.get('ALL_DATABASES', False))
+DB        = "" if ALL_DBS else os.environ.get('MYSQL_DATABASE')
 
 cloud = GCS(BUCKET, KEEP)
 
@@ -75,7 +76,7 @@ def db_backup():
     cloud.cleanup(DB)
 
 def run_backup():
-    if ALL_DATABASES:
+    if ALL_DBS:
         database_list_command = "mysql -u %s -p%s -h %s -P %s --silent -N -e 'show databases'" % (USERNAME, PASSWORD, HOST, PORT)
         for database in os.popen(database_list_command).readlines():
             database = database.strip()
