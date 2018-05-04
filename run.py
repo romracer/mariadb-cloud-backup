@@ -34,7 +34,7 @@ class GCS:
 
     def upload(self, f, upload_name):
         blob = storage.Blob(upload_name, self.bucket)
-        logging.info("Uploading backup to %s%s" % (self.bucket, upload_name))
+        logging.info("Uploading backup to %s/%s" % (self.bucket, upload_name))
         blob.upload_from_file(f, rewind=True)
 
     def cleanup(self, prefix = ""):
