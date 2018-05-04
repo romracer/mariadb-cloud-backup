@@ -49,14 +49,14 @@ AT_TIME       = os.environ.get('AT_TIME', "00:00") # at midnight
 
 # DB configuration options
 HOST      = os.environ.get('MYSQL_HOST', 'localhost')
-PORT      = os.environ.get('MYSQL_PORT', '3306')
+PORT      = int(os.environ.get('MYSQL_PORT', 3306))
 USERNAME  = os.environ.get('MYSQL_USER')
 PASSWORD  = os.environ.get('MYSQL_PASSWORD')
-DB        = "-A" if bool(os.environ.get('ALL_DATABASES', False)) else os.environ.get('MYSQL_DATABASE')
+DB        = "" if bool(os.environ.get('ALL_DATABASES', False)) else os.environ.get('MYSQL_DATABASE')
 
 cloud = GCS(BUCKET, KEEP)
 
-def backup():
+def db_backup():
     backup_name = "%s/%s-%s.sql" % (DB, DB, time.strftime("%Y-%m-%d-%H%M%S"))
     logging.info("Running backup %s" % backup_name)
     with tempfile.NamedTemporaryFile() as f:
@@ -74,10 +74,24 @@ def backup():
 
     cloud.cleanup(DB)
 
+def run_backup():
+    if ALL_DATABASES:
+        database_list_command = "mysql -u %s -p%s -h %s -P %s --silent -N -e 'show databases'" % (USERNAME, PASSWORD, HOST, PORT)
+        for database in os.popen(database_list_command).readlines():
+            database = database.strip()
+            if database == 'information_schema':
+                continue
+            if database == 'performance_schema':
+                continue
+            DB = database
+            db_backup()
+    else:
+        db_backup()
+
 if EVERY_N_DAYS > 0:
-    schedule.every(EVERY_N_DAYS).days.at(AT_TIME).do(backup)
+    schedule.every(EVERY_N_DAYS).days.at(AT_TIME).do(run_backup)
     while True:
         schedule.run_pending()
         time.sleep(30)
 else:
-    backup()
+    run_backup()
