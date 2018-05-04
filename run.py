@@ -76,6 +76,7 @@ def db_backup():
     cloud.cleanup(DB)
 
 def run_backup():
+    global DB
     if ALL_DBS:
         database_list_command = "mysql -u %s -p%s -h %s -P %s --silent -N -e 'show databases'" % (USERNAME, PASSWORD, HOST, PORT)
         for database in os.popen(database_list_command).readlines():
